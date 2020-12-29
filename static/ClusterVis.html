@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>聚类可视分析</title>
+    <link rel="stylesheet" href="layui/css/layui.css">
+    <script src="./js/jquery-3.5.0.min.js"></script>
+    <script src="./layui/layui.js"></script>
+    <script src="./js/d3.v5.js"></script>
+    <script src="./js/dataBaseOP.js"></script>
+    <script src="./js/chart.js"></script>
+    <script src="./js/basicRiver.js"></script>
+    <script src="./js/basicTreeChart.js" ></script>
+    <script src="./js/parallelLineChart.js" ></script>
+    <script src="./js/basicScatter.js" ></script>
+    <script src="js/dataTable.js"></script>
+    <script src="./js/basicPieChart.js"></script>
+    <script src="./js/basicOP.js"></script>
+    <script src="./js/ruleTreeChart.js"></script>
+    <script src="./js/ruleInfo.js"></script>
+    <script src="js/ruletype.js"></script>
+    <style>
+        /*关键设置 tbody出现滚动条*/
+        table tbody {
+            display: block;
+            height: 250px;
+            overflow-y: scroll;
+        }
+        table thead,
+        tbody tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+        /*关键设置：滚动条默认宽度是16px 将thead的宽度减16px*/
+        table thead {
+            width: calc( 100% - 1em)
+        }
+
+    </style>
+</head>
+<body>
+    <div class="layui-container">
+        <div class="layui-row">
+            <div class="layui-col-xs3">
+                <fieldset class="layui-elem-field layui-field-title" style="margin-top: 15px;">
+                    <legend>提交数据</legend>
+                </fieldset>
+                <div class="layui-upload-drag" id="uploadFile">
+                  <i class="layui-icon"></i>
+                  <p>点击上传，或将文件拖拽到此处</p>
+                </div>
+                <form class="layui-form" action="">
+
+                    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 10px;">
+                        <legend>聚类参数</legend>
+                    </fieldset>
+                    <div class="layui-form-item">
+                         <label class="layui-form-label">聚类个数：</label>
+                         <div class="layui-input-block">
+                          <input type="text" id="cluster_num" lay-verify="title" autocomplete="off" placeholder="请输入聚类个数" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                         <label class="layui-form-label">覆盖度：</label>
+                         <div class="layui-input-block">
+                          <input type="text" id="cluster_Overlap" lay-verify="title" autocomplete="off" placeholder="请输入聚类覆盖度" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                         <label class="layui-form-label">异常值：</label>
+                         <div class="layui-input-block">
+                          <input type="text" id="cluster_Outlier" lay-verify="title" autocomplete="off" placeholder="请输入异常值" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">距离计算：</label>
+                        <div class="layui-input-block">
+                          <select name="interest" lay-filter="aihao">
+                            <option value="0" selected="">欧式距离</option>
+                            <option value="1" >曼哈顿距离
+                            </option>
+                            <option value="2">切比雪夫距离</option>
+                            <option value="3">闵可夫斯基距离(</option>
+                            <option value="4">余弦距离</option>
+                          </select>
+                        </div>
+                    </div>
+                    <div align="center">
+                        <button type="button" onclick="showClusterResult();" class="layui-btn ">聚类分析</button>
+                    </div>
+
+
+                    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 10px;">
+                        <legend>聚类类别</legend>
+                    </fieldset>
+                    <div id = "ruleTypeView" style="margin:0 auto">
+
+                    </div>
+                </form>
+            </div>
+            <div class="layui-col-xs9" style="height: 350px">
+                <div class="layui-row">
+                    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 15px;">
+                        <legend>原始数据展示</legend>
+                    </fieldset>
+                    <table class="layui-table" lay-skin="line">
+                        <thead>
+                        </thead>
+                        <tbody >
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="layui-row">
+                     <div id="scatterView" class="layui-col-xs6" style="height: 300px">
+                          <select id="select_1" onchange="changeScatterType()">
+                            <option value="0" >投影试图</option>
+                            <option value="1" selected="">散点特征值</option>
+                          </select>
+                          <select id="select_2" onchange="drawBasicScatter()" style="display: none">
+                            <option value="0" selected="">PCA投影</option>
+                            <option value="2">TSNE投影</option>
+                          </select>
+
+
+                          <select id="select_3" onchange="drawBasicScatter()">
+
+                          </select>
+
+
+                          <select id="select_4"  onchange="drawBasicScatter()">
+
+                          </select>
+
+                    </div>
+                     <div id="streamView" class="layui-col-xs6" style="height: 300px">
+                     </div>
+                </div>
+
+                <div class="layui-row">
+                    <div id="ruleTreeView" class="layui-col-xs6">
+                    </div>
+                    <div id="ruleInfoView" class="layui-col-xs6">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+<script>
+    var featureNames = [];
+    var showData = [];
+    var tableData = [];
+    var typeList = [];
+    var typeArray = [];
+    var centerPoint = [];
+    var dTable = new dataTable();
+    var n_feature = 0;
+    var version = 0;
+    var rules;
+    layui.use('upload', function() {
+        var  upload = layui.upload;
+        upload.render({
+            elem: '#uploadFile'
+            ,url: '/upload_file/' //改成您自己的上传接口
+            ,accept:"file"
+            ,done: function(res){
+                doUPLoadFile(res);
+            }
+        });
+    });
+    layui.use('form', function(){
+    });
+    layui.use('layer', function(){
+        var layer = layui.layer;
+});
+</script>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+	</head>
+	<body>
+		<button type="button" name="seach" onclick="FuncCSVInport()">CSV Import</button>
+		<input type="file" id="csvFileInput" onchange="readCSVFile(this)" />
+		<script type="text/javascript">
+			
+			 var db = openDatabase('riverdata', '1.0', 'Test DB', 2 * 1024 * 1024);
+			 db.transaction(function (tx) {
+			            tx.executeSql('drop table if exists iris_info');
+			         	tx.executeSql('create table if not exists iris_info(p1 double, p2 double, p3 double, p4 double,type) ');
+			       
+			         });
+			function csvToObject(csvString){
+			        var csvarry = csvString.split("\n");
+			        var datas = [];
+			        var headers = csvarry[0].split(",");
+			        for(var i = 0;i<csvarry.length;i++){
+			            var data = {};
+			            var temp = csvarry[i].split(",");
+			                 for(var j = 0;j<temp.length;j++){
+			                     data[headers[j]] = temp[j];
+			                 }
+			            datas.push(data);
+			        }
+			         return datas;
+			    }
+			 function InsertOneRow(value) {
+				db.transaction(function (tx) {
+					tx.executeSql('INSERT INTO iris_info (p1, p2, p3, p4,type) VALUES (?,?,?,?,?) ',value);		  
+				});		
+			 }
+			 function readCSVFile(obj) {
+				var reader = new FileReader();
+				         reader.readAsText(obj.files[0]);
+				         reader.onload = function () {
+				             var csvarry = this.result.split("\n");
+							 for(var i = 0;i<csvarry.length;i++){
+							    var temp = csvarry[i].split(",");
+								InsertOneRow(temp);
+							  }
+				                
+				        }
+			 }
+		</script>
+	</body>
+</html>

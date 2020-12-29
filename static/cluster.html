@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>dectree</title>
+    <script src="js/echarts.min.js"></script>
+    <script src="js/jquery-3.5.0.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+
+    <link rel="stylesheet" href="layui/css/layui.css">
+
+    <link rel="stylesheet" href="layui/css/dectree.css"  media="all">
+
+ 
+    <script src="layui/layui.js"></script>
+    <script src="js/dectree.js"></script>
+    <script src="js/scatter.js"></script>
+    <script src="js/draw_result.js"></script>
+
+
+</head>
+<body>
+  <div class="layui-container">
+        <div class="layui-row">
+            <div class="layui-col-xs3">
+              <div id="selecttable">
+
+                <div class="form-group">
+                  <label for="num">dectree</label>
+                  &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+                  <input type="text" class="form-control" id="dectree_num"required/>
+                </div>
+                <div class="form-group">
+                  <label for="num">clutser_number</label>
+                  <input type="text" class="form-control" id="cluster_num"required/>
+                </div>
+                <div class="form-group">
+                  &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+                  &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+                  <button onclick="draw_result()">draw_result</button>
+                </div>
+              </div>
+            </div>
+            <div  class="layui-col-xs9">
+                <div>
+                </div>
+            </div>
+      </div>
+      <div class="layui-row">
+            <div class="layui-col-xs6">
+                <div id="dectree_1">
+                </div>
+            </div>
+            <div  class="layui-col-xs6">
+                <div id = "scatter_1">
+                    <svg></svg>
+                </div>
+            </div>
+      </div>
+      <div class="layui-row">
+            <div class="layui-col-xs6">
+            <div id="dectree_2">
+            </div>
+
+            </div>
+            <div class="layui-col-xs6">
+              <div id="scatter_2">
+              <svg>
+              </svg>
+              </div>
+            </div>
+
+      </div>
+  </div>
+
+    <script type="text/javascript">
+    // 测试数据
+    var feature = [0, 2, -2, -2, 0, 2, -2, -2, -2];
+    var right = [4, 3, -1, -1, 8, 7, -1, -1, -1];
+    var left = [1, 2, -1, -1, 5, 6, -1, -1, -1];
+    var que_value = [[[95.0, 107.0]], [[1.0, 105.0]],
+    [[0.0, 105.0]], [[1.0, 0.0]],
+    [[94.0, 2.0]], [[4.0, 2.0]],
+    [[0.0, 2.0]], [[4.0, 0.0]], [[90.0, 0.0]]];
+    var threshold = [8.294692039489746, 4.870243310928345, -2.0, -2.0, 8.659759998321533, 4.708588361740112, -2.0, -2.0, -2.0];
+
+    $.get("/test/",function (ret) {
+        console.log(ret.data);
+        dectree(feature,right,left,que_value,threshold,ret.data,"#dectree_1","#scatter_1");
+        dectree(feature,right,left,que_value,threshold,ret.data,"#dectree_2","#scatter_2");
+        
+    });
+
+    </script>
+</body>
+</html>

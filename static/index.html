@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ClusterVis</title>
+    <link rel="stylesheet" href="layui/css/layui.css">
+    <script src="./js/jquery-3.5.0.min.js"></script>
+    <script src="layui/layui.js"></script>
+    <script src="./js/d3.v5.js"></script>
+    <script src="./js/chart.js"></script>
+    <script src="./js/basicRiver.js"></script>
+    <script src="./js/basicTreeChart.js" ></script>
+    <script src="./js/parallelLineChart.js" ></script>
+    <script src="./js/basicScatter.js" ></script>
+    <script src="js/basicOP.js"></script>
+    <script src="js/basicPieChart.js"></script>
+<style>
+            /*关键设置 tbody出现滚动条*/
+            table tbody {
+                display: block;
+                height: 250px;
+                overflow-y: scroll;
+            }
+            table thead,
+            tbody tr {
+                display: table;
+                width: 100%;
+                table-layout: fixed;
+            }
+            /*关键设置：滚动条默认宽度是16px 将thead的宽度减16px*/
+            table thead {
+                width: calc( 100% - 1em)
+            }
+
+</style>
+</head>
+<body>
+    <div class="layui-container">
+        <div class="layui-row">
+            <div class="layui-col-xs3">
+                <fieldset class="layui-elem-field layui-field-title" style="margin-top: 15px;">
+                    <legend>提交数据</legend>
+                </fieldset>
+                <div class="layui-upload-drag" id="test10">
+                  <i class="layui-icon"></i>
+                  <p>点击上传，或将文件拖拽到此处</p>
+                </div>
+                <form class="layui-form" action="">
+                    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 10px;">
+                        <legend>聚类参数</legend>
+                    </fieldset>
+                    <div class="layui-form-item">
+                         <label class="layui-form-label">聚类个数：</label>
+                         <div class="layui-input-block">
+                          <input type="text" id="cluster_num" lay-verify="title" autocomplete="off" placeholder="请输入聚类个数" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">距离计算：</label>
+                        <div class="layui-input-block">
+                          <select name="interest" lay-filter="aihao">
+                            <option value="0" selected="">欧式距离</option>
+                            <option value="1" >曼哈顿距离
+                            </option>
+                            <option value="2">切比雪夫距离</option>
+                            <option value="3">闵可夫斯基距离(</option>
+                            <option value="4">余弦距离</option>
+                          </select>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                            <label class="layui-form-label">决策层数：</label>
+                             <div class="layui-input-block">
+                              <input type="text" id="dectree_val" lay-verify="title" autocomplete="off" placeholder="请输入决策树层数" class="layui-input">
+                            </div>
+                    </div>
+                    <div align="center">
+                        <button type="button" onclick="showClusterResult();" class="layui-btn ">聚类分析</button>
+                    </div>
+
+                    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 10px;">
+                        <legend>聚类特征</legend>
+                    </fieldset>
+
+                    <div id = "featureView" align="center">
+                        <div class="layui-form-item">
+                            <div class="layui-input-inline">
+                                 <input type="checkbox" name="like[write]" title="features1" checked>
+                              </div>
+                            <div class="layui-input-inline" style="width: 60px;">
+                                <input type="text"  placeholder="1.0" class="layui-input" >
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-input-inline" >
+                                 <input type="checkbox" name="like[write]" title="features2" checked>
+                              </div>
+                            <div class="layui-input-inline" style="width: 60px;">
+                                <input type="text"  placeholder="1.0" class="layui-input" >
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-input-inline">
+                                <input type="checkbox" name="like[write]" title="features3" checked>
+                              </div>
+                            <div class="layui-input-inline" style="width: 60px;">
+                                <input type="text"  placeholder="1.0" class="layui-input" >
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-input-inline">
+                                 <input type="checkbox" name="like[write]" title="features4" checked>
+                              </div>
+                            <div class="layui-input-inline" style="width: 60px;">
+                                <input type="text"  placeholder="1.0" class="layui-input" >
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 10px;">
+                        <legend>聚类类别</legend>
+                    </fieldset>
+                    <div id = "typeView" style="margin:0 auto">
+
+                    </div>
+                </form>
+            </div>
+            <div id="p5" class="layui-col-xs9" style="height: 350px">
+                <fieldset class="layui-elem-field layui-field-title" style="margin-top: 15px;">
+                    <legend>原始数据展示</legend>
+                </fieldset>
+                <table class="layui-table" lay-skin="line">
+                  <thead>
+                  </thead>
+                  <tbody >
+                  </tbody>
+                </table>
+                 <div class="layui-row">
+                     <div id="scatterView" class="layui-col-xs6" style="height: 300px">
+
+
+
+                          <select id="select_1" onchange="changeScatterType()">
+                            <option value="0" >投影试图</option>
+                            <option value="1" selected="">散点特征值</option>
+                          </select>
+                          <select id="select_2" onchange="showProjec()" style="display: none">
+                            <option value="0" selected="">PCA投影</option>
+                            <option value="2">TSNE投影</option>
+                          </select>
+
+
+                          <select id="select_3" onchange="showFeatureScatter()">
+
+                          </select>
+
+
+                          <select id="select_4"  onchange="showFeatureScatter()">
+
+                          </select>
+
+                    </div>
+
+                    <div id="treeView" class="layui-col-xs6">
+                    </div>
+                </div>
+                <div class="layui-row">
+                    <div id="parallelLineView" class="layui-col-xs6">
+                    </div>
+                    <div id="streamView" class="layui-col-xs6" style="height: 300px">
+                        <select id="select_5" onclick="changeRiverChart()">
+                            <option value="0" selected="">特征1</option>
+                            <option value="2">特征2</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+<script>
+    var featureList = [];
+    var typeNum = 0;
+    var allType = [];
+    var analyseData;
+    var showData;
+    function chooseColor(ele){
+        layui.use('colorpicker', function(){
+            var $ = layui.$``
+                ,colorpicker = layui.colorpicker;
+            colorpicker.render({
+                elem: ele //绑定元素
+                ,color:'#00F7DE'
+                ,change: function(color){ //颜色改变的回调
+                }
+            });
+        });
+    }
+    chooseColor("#test-form");
+    layui.use('form', function(){
+      var form = layui.form;
+
+      //监听提交
+      form.on('submit(formDemo)', function(data){
+        layer.msg(JSON.stringify(data.field));
+        return false;
+      });
+    });
+    layui.use('upload', function() {
+        var $ = layui.jquery
+            , upload = layui.upload;
+         //拖拽上传
+      upload.render({
+        elem: '#test10'
+        ,url: '/upload_file/' //改成您自己的上传接口
+          ,accept:"file"
+        ,done: function(res){
+             featureList = res.feature_names;
+             trs = d3.select("thead").append("tr")
+             ths = trs.selectAll("th").data(res.feature_names);
+             ths.enter().append('th').text((d)=>d);
+             ths.exit().remove();
+             trs.append('th').text("cluster_type");
+             trs.append('th').text("DT_type");
+             trs.append('th').text("Final_type");
+             trs = d3.select("tbody").selectAll("tr").data(res.data);
+
+             trs_enter = trs.enter().append("tr");
+
+             tds = trs_enter.selectAll("td").data((d)=>d);
+             tds.enter().append('td').text((d)=>d);
+             trs_enter.append("td").text("");
+             trs_enter.append("td").text("");
+             trs_enter.append("td").text("");
+             d3.select("tbody").selectAll("tr").on('click',function (d,i) {
+                alert(i);
+             });
+             d3.select("#select_5").selectAll("option").remove();
+             options =  d3.select("#select_5").selectAll("option").data(featureList);
+             options.enter().append("option")
+                 .attr("value",(d,i)=>i)
+                .text((d)=>d);
+              d3.select("#select_4").selectAll("option").remove();
+             options =  d3.select("#select_4").selectAll("option").data(featureList);
+             options.enter().append("option")
+                 .attr("value",(d,i)=>i)
+                .text((d)=>d);
+              d3.select("#select_3").selectAll("option").remove();
+             options =  d3.select("#select_3").selectAll("option").data(featureList);
+             options.enter().append("option")
+                 .attr("value",(d,i)=>i)
+                .text((d)=>d);
+             featureDiv = d3.select("#featureView").selectAll("div").data(featureList).select("input").attr("title",(d)=>d);
+            // d3.select("#featureView").selectAll("div").remove();
+            // featureDiv = d3.select("#featureView").selectAll("div").data(featureList).enter().append("div").attr("class","layui-form-item");
+            // featureDiv.append("div").attr("class","layui-input-inline").append("input").attr("type","checkbox").attr("name",(d)=>d).attr("title",(d)=>d).attr("checked","");
+            // featureDiv.append("div").attr("class","layui-input-inline").style("width","60px").append("input")
+             //    .attr("type","text")
+            //     .attr("placeholder",1.0)
+            //     .attr("class","layui-input");
+              layui.use('form', function(){});
+
+        }
+      });
+    });
+
+</script>
+</html>

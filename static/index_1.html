@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>ECharts</title>
+    <!-- 引入 echarts.js -->
+    <script src="js/echarts.min.js"></script>
+    <script src="js/jquery-3.5.0.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <link rel="stylesheet" href="layui/css/layui.css">
+    <script src="layui/layui.js"></script>
+    <style>
+
+    .node {
+        cursor: pointer;
+    }
+
+    .node circle {
+        stroke: #f0f;
+        stroke-width: 4px;
+    }
+
+    .node text {
+      font: 12px sans-serif;
+    }
+
+    .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 2px;
+    }
+  .fill_normal {
+    fill: green;
+  }
+  .bling{ animation: alarm 0.4s  ease-in  infinite ; fill: #ffff00; font-weight: bold;}
+  @keyframes alarm {
+      0%{ fill:#FF9966;}
+      50%{ fill:#FF3333;}
+      100%{ fill:#FF9966;}
+  }
+
+    </style>
+
+</head>
+<body>
+  <div class="layui-container">
+
+      <div class="layui-row">
+            <div class="layui-col-xs6">
+               <table id="dataTable" lay-filter="test"></table>
+            </div>
+            <div id="p5" class="layui-col-xs6" style="height: 300px">
+                123
+            </div>
+      </div>
+      <div class="layui-row">
+            <div id="treeView" class="layui-col-xs9" >
+               <div  id="pathInput">
+                    <form class="layui-form" action="">
+                      <div class="layui-form-item">
+                        <label class="layui-form-label">分割属性</label>
+                        <div class="layui-input-block">
+                        <select id="splitName" name="interest" lay-filter="aihao">
+                            <option value="p1">p1</option>
+                            <option value="p2" selected="">p2</option>
+                            <option value="p3">p3</option>
+                            <option value="p4">p4</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="layui-form-item">
+                        <label class="layui-form-label">分割属性值</label>
+                        <div class="layui-input-block">
+                          <input type="text" id="splitNum" lay-verify="required" lay-reqtext="用户名是必填项，岂能为空？" placeholder="请输入" autocomplete="off" class="layui-input">
+                        </div>
+                      </div>
+                        <button type="button"  onclick="splitFunc()" class="layui-btn layui-btn-primary">分割节点</button>
+                        <button type="button"  onclick="postResult()" class="layui-btn layui-btn-primary">上传分类结果</button>
+                    </form>
+
+              </div>
+              <div  id="treeView">
+
+              </div>
+        </div>
+            <div id="streamView" class="layui-col-xs3" style="height: 200px">
+                <div id="p1"  style="height: 200px">
+                </div>
+                <div id="p2" style="height: 200px">
+                </div>
+                <div id="p3"  style="height: 200px">
+                </div>
+                <div id="p4"  style="height: 200px">
+                </div>
+            </div>
+
+      </div>
+  </div>
+
+    <script type="text/javascript">
+        var splitnode;
+        var selectIndex;
+       layui.use('table', function(){
+            var table = layui.table;
+
+        //第一个实例
+          table.render({
+            elem: '#dataTable'
+            ,height: 312
+            ,url: '/getData/' //数据接口
+            ,cols: [[ //表头
+              {field: 'p1', title: '花萼长度', sort: true, fixed: 'left'}
+              ,{field: 'p2', title: '花萼宽度'}
+              ,{field: 'p3', title: '花瓣长度', sort: true}
+              ,{field: 'p4', title: '花瓣宽度'}
+              ,{field: 'p5', title: '类型'}
+
+            ]]
+          });
+
+        });
+
+
+       var db = openDatabase('riverdata', '1.0', 'Test DB', 2 * 1024 * 1024);
+       function drawSteam(divId,feature,d){
+           var divChart = echarts.init(document.getElementById(divId));
+           var sql = "SELECT "+feature+" as feature,COUNT(*) as num ,type from iris_info "+d.splitPath+ " GROUP BY "+feature+",type;"
+           var da = [];
+           var option = {
+               title: {
+				                text: feature+"划分流图"
+				            },
+               singleAxis: {
+					top: 50,
+					bottom: 50,
+
+               },
+               tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'line',
+                        lineStyle: {
+                            color: 'rgba(0,0,0,0.2)',
+                            width: 1,
+                            type: 'solid'
+                        }
+                    }
+               },
+               series: [{
+                        type: 'themeRiver',
+                        data: [],
+                        label: {show: false}
+               }],
+					
+			};
+		
+			db.transaction(function(tx) {
+				tx.executeSql(sql, null, function(tx, rs) {
+					info = rs.rows;
+					var s = new Set();
+					for(var i = 0;i<info.length;i++)
+					{
+						s.add(info[i].type);
+					}
+					for(var i = 0;i<info.length;i++)
+					{
+						if(i!=0)
+						{
+							if(info[i].feature == info[i-1].feature)
+							continue;
+						}
+						for(var x of s)
+						{
+							da.push([info[i].feature,0,x]);
+						}
+						
+					}
+					for(var i = 0;i<info.length;i++)
+					{
+						for(var j=0;j<da.length;j++)
+						{
+							if(da[j][0] ==info[i].feature && da[j][2] == info[i].type)
+							da[j][1] = info[i].num; 
+						}	
+					}
+					option.series[0].data = da;
+					option.title.text=feature+"划分流图";
+					option.singleAxis.min = info[0].feature;
+					divChart.setOption(option);
+					divChart.on('click', function (params) {
+					    // 控制台打印数据的名称
+					    console.log(params.name);
+					});
+									
+				});
+				
+			});
+
+		}
+		function drawScatter(divId,feature1,feature2){
+		    var divChart = echarts.init(document.getElementById(divId));
+            var sql = "SELECT p1,p2,p3,p4 from iris_info;"
+            var da = [];
+            var dat = [];
+            var option = {
+                title: {text: "散点图"},
+                xAxis:[{gridIndex:0} ,{gridIndex: 1}],
+                yAxis: [{gridIndex:0} ,{gridIndex: 1}],
+                tooltip: {
+                    trigger: 'item'
+                },
+                grid:[
+                    {left: '5%',width:'45%'},
+                    {left:'60%',width: '45%'}
+                ],
+                brush: {
+                    brushLink: 'all',
+                    xAxisIndex: [],
+                    yAxisIndex: [],
+                    inBrush: {
+                        opacity: 1
+                    }
+                },
+                series: [{
+                        type: 'scatter',
+                        data: [],
+                        label: {show: false}
+                },{
+                        type: 'scatter',
+                        data: [],
+                        label: {show: false},
+                        xAxisIndex: 1,
+                        yAxisIndex: 1
+                }]
+			};
+            db.transaction(function(tx) {
+				tx.executeSql(sql, null, function(tx, rs) {
+					info = rs.rows;
+					var s = new Set();
+					for(var i = 0;i<info.length;i++)
+					{
+						da.push([info[i].p1,info[i].p3]);
+						dat.push([info[i].p2,info[i].p4]);
+
+					}
+					option.series[0].data = da;
+					option.series[1].data = dat;
+					divChart.setOption(option);
+					divChart.on('click', function (params) {
+					    // 控制台打印数据的名称
+					    console.log(params.name);
+					});
+
+				});
+
+			});
+            divChart.on('brushSelected', renderBrushed);
+
+            function renderBrushed(params) {
+                var brushed = [];
+                var brushComponent = params.batch[0];
+                selectIndex = brushComponent.selected[0].dataIndex;
+                for (var sIdx = 0; sIdx < brushComponent.selected.length; sIdx++) {
+                    var rawIndices = brushComponent.selected[sIdx].dataIndex;
+                    brushed.push('[Series ' + sIdx + '] ' + rawIndices.join(', '));
+                }
+
+                divChart.setOption({
+                    title: {
+                        backgroundColor: '#333',
+                        text: 'SELECTED DATA INDICES: \n' + brushed.join('\n'),
+                        bottom: 0,
+                        right: 0,
+                        width: 100,
+                        textStyle: {
+                            fontSize: 12,
+                            color: '#fff'
+                        }
+                    }
+                });
+            }
+        }
+
+
+		var treeData = [
+  {
+      "name": "Level 1A",
+      "parent": "null",
+      "value": 10,
+      "splitName":"p3",
+      "splitNum":2.45,
+      "splitPath":"",
+  }
+];
+// ************** Generate the tree diagram  *****************
+//定义树图的全局属性（宽高）
+var margin = {top: 20, right: 20, bottom: 20, left: 20},
+    width = 800 - margin.right - margin.left,
+    height = 800 - margin.top - margin.bottom;
+
+var i = 0,
+    duration = 750,//过渡延迟时间
+    root;
+
+var tree = d3.layout.tree()//创建一个树布局
+    .size([height, width]);
+
+var diagonal = d3.svg.diagonal()
+    .projection(function(d) { return [d.x, d.y]; });//创建新的斜线生成器
+
+//声明与定义画布属性
+var svg = d3.select("#treeView").append("svg")
+    .attr("width", width + margin.right + margin.left)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+root = treeData[0];//treeData为上边定义的节点属性
+root.x0 = height / 2;
+root.y0 = 0;
+
+update(root);
+
+d3.select(self.frameElement).style("height", "500px");
+
+function update(source) {
+
+  // Compute the new tree layout.计算新树图的布局
+  var nodes = tree.nodes(root).reverse(),
+      links = tree.links(nodes);
+
+  // Normalize for fixed-depth.设置y坐标点，每层占180px
+  nodes.forEach(function(d) { d.y = d.depth * 180; });
+
+  // Update the nodes…每个node对应一个group
+  var node = svg.selectAll("g.node")
+      .data(nodes, function(d) { return d.id || (d.id = ++i); });//data()：绑定一个数组到选择集上，数组的各项值分别与选择集的各元素绑定
+
+  // Enter any new nodes at the parent's previous position.新增节点数据集，设置位置
+  var nodeEnter = node.enter().append("g")  //在 svg 中添加一个g，g是 svg 中的一个属性，是 group 的意思，它表示一组什么东西，如一组 lines ， rects ，circles 其实坐标轴就是由这些东西构成的。
+      .attr("class", "node") //attr设置html属性，style设置css属性
+      .attr("transform", function(d) { return "translate(" + source.x0 + "," + source.y0 + ")"; })
+      .on("click", click);
+
+  //添加连接点---此处设置的是圆圈过渡时候的效果（颜色）
+  // nodeEnter.append("circle")
+    //   .attr("r", 1e-6);//d 代表数据，也就是与某元素绑定的数据。
+
+  nodeEnter.append("path");
+
+  //添加标签
+  nodeEnter.append("text")
+      .attr("x", function(d) { return d.children || d._children ? -13 : 13; })
+      .attr("dy", ".35em")
+      .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+      .text(function(d) { return d.name; })
+      .style("fill-opacity", 1e-6);
+
+  // Transition nodes to their new position.将节点过渡到一个新的位置-----主要是针对节点过渡过程中的过渡效果
+  //node就是保留的数据集，为原来数据的图形添加过渡动画。首先是整个组的位置
+  var nodeUpdate = node.transition()  //开始一个动画过渡
+      .duration(duration)  //过渡延迟时间,此处主要设置的是圆圈节点随斜线的过渡延迟
+      .attr("r", 10)
+    .attr("transform", function(d) { return "translate(" + d.x+ "," + d.y + ")"; });
+  //更新连接点的填充色
+  // nodeUpdate.select("circle")
+  // .attr("r", 10)
+  // .attr('class',function(d){
+  //   if(d.value <= 9){
+  //     return 'bling';
+  //   }else{
+  //     return 'fill_normal';
+  //   }
+  // });
+  nodeUpdate.select("path")
+    .style("stroke-width", "2px")
+    .style("stroke", "#4682b4")
+    .style("fill", "white")
+    .attr("d", d3.svg.symbol()
+                 .size(function(d){ if
+                    (d.value <= 9) { return "60"; } else if
+                    (d.value >= 9) { return "400";}
+                  })
+                 .type(function(d) { if
+                    (d.value <= 9) { return "triangle-up"; } else if
+                    (d.value >= 9) { return "circle";}
+                  }))
+    .attr('class',function(d){
+      if(d.value <= 9 ){
+        return 'bling';
+      }else{
+        return 'bling';
+      }
+    });
+
+  nodeUpdate.select("text")
+      .style("fill-opacity", 1);
+
+  // Transition exiting nodes to the parent's new position.过渡现有的节点到父母的新位置。
+  //最后处理消失的数据，添加消失动画
+  var nodeExit = node.exit().transition()
+      .duration(duration)
+      .attr("transform", function(d) { return "translate(" + source.x + "," + source.y + ")"; })
+      .remove();
+
+  nodeExit.select("circle")
+      .attr("r", 1e-6);
+
+  nodeExit.select("text")
+      .style("fill-opacity", 1e-6);
+
+  // Update the links…线操作相关
+  //再处理连线集合
+  var link = svg.selectAll("path.link")
+      .data(links, function(d) { return d.target.id; });
+
+  // Enter any new links at the parent's previous position.
+  //添加新的连线
+  link.enter().insert("path", "g")
+      .attr("class", "link")
+      .attr("d", function(d) {
+        var o = {x: source.x0, y: source.y0};
+        return diagonal({source: o, target: o});  //diagonal - 生成一个二维贝塞尔连接器, 用于节点连接图.
+      })
+    .style("stroke",function(d){
+      //d包含当前的属性console.log(d)
+      return '#ccc';
+    });
+
+  // Transition links to their new position.将斜线过渡到新的位置
+  //保留的连线添加过渡动画
+  link.transition()
+      .duration(duration)
+      .attr("d", diagonal);
+
+  // Transition exiting nodes to the parent's new position.过渡现有的斜线到父母的新位置。
+  //消失的连线添加过渡动画
+  link.exit().transition()
+      .duration(duration)
+      .attr("d", function(d) {
+        var o = {x: source.x, y: source.y};
+        return diagonal({source: o, target: o});
+      })
+      .remove();
+
+  // Stash the old positions for transition.将旧的斜线过渡效果隐藏
+  nodes.forEach(function(d) {
+    d.x0 = d.x;
+    d.y0 = d.y;
+  });
+}
+drawScatter('p5','p3','p4');
+//定义一个将某节点折叠的函数
+// Toggle children on click.切换子节点事件
+function click(d) {
+    drawSteam('p1','p1',d);
+    drawSteam('p2','p2',d);
+    drawSteam('p3','p3',d);
+    drawSteam('p4','p4',d);
+    splitnode = d;
+}
+function splitFunc() {
+    var name = $("#splitName").val();
+    alert(name);
+    num =  $("#splitNum").val();
+    alert(num);
+    s = "";
+    if(splitnode.splitPath == "")
+    {
+        s = "where ";
+    }
+    else  {
+        s = splitnode.splitPath + " and ";
+    }
+    splitnode.children =[{
+          "name": "Level 4A",
+          "value": 10,
+          "splitPath":s+name+"<"+num+" ",
+      },
+      {
+          "name": "Level 4B",
+          "value": 5,
+           "splitPath":s+name+">="+num+" ",
+      },];
+    update(splitnode);
+
+}
+function postResult(){
+    alert(selectIndex);
+}
+
+    </script>
+</body>
+</html>
