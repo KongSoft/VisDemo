@@ -1,9 +1,12 @@
 
-function  makeStreamData(inData,k){
+function  makeStreamData(inData,k,Order){
     var data = inData.data;
     var feature = inData.feature;
+    if(feature<0)
+        feature = 0;
     var typeInfo = inData.typeInfo;
-    var types = ["type1","typek"];
+    var x1,x2;
+    var types = ["other","typek"];
     var minfeature = parseFloat(d3.min(data,function (d) {
         return d[feature];
     }));
@@ -11,11 +14,11 @@ function  makeStreamData(inData,k){
         return d[feature];
     }));
     streamData = [];
-    for(var a = minfeature;a <= maxfeature; a=a+0.1)
+    for(var a = minfeature;a <= maxfeature; a=a+1)
     {
         tmp = {};
-        tmp.feature = a.toFixed(1);
-        tmp.type1 = 0;
+        tmp.feature =parseFloat(a.toFixed(0));
+        tmp.other = 0;
         tmp.typek = 0;
         streamData.push(tmp);
     }
@@ -23,7 +26,7 @@ function  makeStreamData(inData,k){
     {
         for(var j=0;j<streamData.length;j++)
         {
-            if(streamData[j].feature==parseFloat(data[i][feature]).toFixed(1))
+            if(streamData[j].feature==parseFloat(data[i][feature]).toFixed(0))
             {
                 if(typeInfo[i][k]==1)
                 {
@@ -31,24 +34,41 @@ function  makeStreamData(inData,k){
                 }
                 else
                 {
-                     streamData[j].type1++;
+                     streamData[j].other++;
                 }
             }
 
         }
     }
+    if(Order==0)
+    {
+        x1 = minfeature;
+        x2 = inData.threshold;
+    }
+    else
+    {
+        x1 = inData.threshold;
+        x2 = maxfeature;
+    }
+    x2 = parseFloat(x2);
+    x1 = parseFloat(x1);
     stream ={};
     stream.data = streamData;
     stream.type = types;
+    stream.x1 =parseFloat(x1.toFixed(0));
+    stream.x2 =parseFloat(x2.toFixed(0));
+    stream.text = inData.text;
     return stream;
 }
-function drawStreamChart(stream){
+function drawStreamChart(stream,k,con,showtext){
     var data = stream.data;
     var types = stream.type;
+    var x1 = stream.x1;
+    var x2 = stream.x2;
     /* ----------------------------配置参数------------------------  */
     const chart = new Chart();
     const config = {
-        margins: {top: 80, left: 80, bottom: 50, right: 80},
+        margins: {top: 0, left: 0, bottom: 0, right: 0},
         textColor: 'black',
         gridColor: 'gray',
         title: '基础河流图',
@@ -56,6 +76,8 @@ function drawStreamChart(stream){
     }
 
     chart.margins(config.margins);
+    chart.width(200);
+    chart.height(100)
 
     /* ----------------------------尺度转换------------------------  */
     chart.scaleX = d3.scaleLinear()
@@ -96,7 +118,12 @@ function drawStreamChart(stream){
                         .append('path')
                         .attr('class', (d) => 'area area-' + d.key)
                     .merge(areas)
-                        .style('fill', (d) => chart._colors(d.key))
+                        .style('fill', function(d){
+                            if (d.key == "typek")
+                                return chart._colors[typek+1];
+                            else
+                                return chart._colors[0];
+                        })
                         .transition().duration(config.animateDuration)
                         .attrTween('d', areaTween);
 
@@ -206,19 +233,21 @@ function drawStreamChart(stream){
 
     /* ----------------------------渲染图标题------------------------  */
     chart.renderTitle = function(){
-        // chart.svg().append('text')
-        //         .classed('title', true)
-        //         .attr('x', chart.width()/2)
-        //         .attr('y', 0)
-        //         .attr('dy', '2em')
-        //         .text(config.title)
-        //         .attr('fill', config.textColor)
-        //         .attr('text-anchor', 'middle')
-        //         .attr('stroke', config.textColor);
+        chart.svg().append('text')
+                .classed('title', true)
+                .attr('x', chart.width()/2)
+                .attr('y', 0)
+                .attr('dy', '2em')
+                .text(showtext)
+                .attr('fill', config.textColor)
+                .attr('text-anchor', 'middle')
+                .attr('stroke', config.textColor);
+
         chart.svg().append("rect")
-            .attr("x",80)
-            .attr("width",150)
-            .attr("height",300)
+            .attr("x",chart.scaleX(x1))
+            .attr("width",chart.scaleX(x2)-chart.scaleX(x1))
+            .attr('transform', 'translate(' + chart.bodyX() + ',' + chart.bodyY() + ')')
+            .attr("height",200)
             .attr("fill","grey")
             .attr("opacity",0.4);
 
@@ -291,7 +320,7 @@ function drawStreamChart(stream){
 
         chart.addMouseOn();
     }
-    chart.box(d3.select("#streamView"));
+    chart.box(con);
     chart.renderChart();
 
 

@@ -28,6 +28,7 @@ urlpatterns = [
     path('showTSNE/', views.showTSNE),
     path('showPCA/', views.showPCA),
     path('getRuleTree/', views.getRuleTree),
+    path('getAttributeTSNE/', views.getAttributeTSNE),
 
 
 ]

@@ -61,6 +61,7 @@ function showRuleResult(k){
             }
              makeRuleTreeData(feature,right,left,threshold,k);
 
+
         }
     });
 }
@@ -92,15 +93,11 @@ function showClusterResult(){
                 //console.log(dataRes);
 
                 typeList = dataRes['type'];
-                for (var i = 0;i<typeList.length;i++)
-                {
-                    if (typeList[i] =="")
-                        typeList[i]="0";
-                }
                 typeArray = dataRes['assment'];
                 centerPoint = dataRes['center'];
                 drawBasicScatter();
                 drawOverlapType();
+                dTable.upDataType();
             }
         });
 

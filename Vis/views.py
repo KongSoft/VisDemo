@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.http import HttpResponse
-from Vis.svmModel import tsneModel,showTSNEView
+from Vis.svmModel import tsneModel,showTSNEView,showAttributeTSNE
 from Vis.ReadFile import ReadCSVFile
 from Vis.VisData import getData,getDectree,makeRuleTree
 from Vis.NEOKmeans import NeoKmeans
@@ -98,6 +98,13 @@ def getRuleTree(request):
         typeArray = request.POST.get('typeArray')
         typeArray = json.loads(typeArray)
         return JsonResponse(makeRuleTree(data,type,typeArray))
+def getAttributeTSNE(request):
+    if request.method == "POST":
+        data = request.POST.get('data')
+        attribute = request.POST.get('attribute')
+        data = json.loads(data)
 
-
+        dic = {}
+        dic['data'] = showAttributeTSNE(data, attribute).tolist()
+        return JsonResponse(dic)
 

@@ -2,11 +2,13 @@ class Chart {
     constructor(){
         this._width = 427;
         this._height = 300;
-        this._margins = {top:30, left:30, right:30, bottom:30};
+        this._margins = {top:15, left:15, right:15, bottom:15};
         this._data = [];
         this._scaleX = null;
         this._scaleY = null;
-        this._colors = d3.scaleOrdinal().domain([0,1,2,3,4,5,6,7,8,9]).range(d3.schemeCategory10);
+        this._colors = ["#b5bfc2", "#ff7f0e", "#2ca02c", "#d62728",
+            "#9467bd", "#8c564b", "#e377c2", "#214c79", "#bcbd22",
+            "#1f77b4"];
         this._box = null;
         this._svg = null;
         this._body = null;

@@ -36,6 +36,26 @@ var dataTable =  function () {
             //     });
             // });
         },
+        upDataType:function () {
+            for (var i = 0;i<typeArray.length;i++)
+            {
+                a = [];
+                for (let k = 0;k<typeArray[i].length;k++)
+                {
+                    if(typeArray[i][k]!=0)
+                    {
+                        a.push(k+1)
+                    }
+                }
+                if(a.length == 0)
+                {
+                    a.push(0);
+                }
+                tableData[i][n_feature+1] = a.toString();
+            }
+            this.updateTable(tableData);
+
+        }
 
     }
 }
